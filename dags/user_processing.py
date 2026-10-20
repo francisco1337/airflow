@@ -4,7 +4,11 @@ from airflow.sdk.bases.sensor import BaseSensorOperator, PokeReturnValue
 from airflow.providers.standard.operators.python import PythonOperator
 
 def _extract_user(ti):
-    fake_user = ti.xcom_pull(task_ids="is_api_available")
+    #fake_user = ti.xcom_pull(task_ids="is_api_available")
+    import requests
+    response = requests.get("https://raw.githubusercontent.com/marclamberti/datasets/refs/heads/main/fakeuser.json")
+    fake_user = response.json()
+
     return {
         "id": fake_user["id"],
         "firstname": fake_user["personalInfo"]["firstName"],
@@ -45,12 +49,41 @@ def user_processing():
             fake_user = None
         
         return PokeReturnValue(is_done=condition, xcom_value=fake_user)
+    
+    @task
+    def extract_user(fake_user):
+        
+        user_info =  {
+            "id": "123",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john.doe@example.com",
+        }
+
+        return {
+            "id": fake_user["id"],
+            "firstname": fake_user["personalInfo"]["firstName"],
+            "lastname": fake_user["personalInfo"]["lastName"],
+            "email": fake_user["personalInfo"]["email"],
+        }
+
+    @task
+    def process_user(user_info):
+        import csv
+        with open("/tmp/user_info.csv", "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=user_info.keys())
+            writer.writeheader()
+            writer.writerow(user_info)
+
+    
+    fake_user = is_api_available()
+    user_info = extract_user(fake_user)
 
     extract_user = PythonOperator(
         task_id = "extract_user",
         python_callable = _extract_user
     )
+
     
     
-    is_api_available()
 user_processing()
