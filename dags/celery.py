@@ -9,15 +9,21 @@ def celery_dag():
         sleep(5)
         
     @task
-    def b():
+    def b(
+        queue="high_cpu"
+    ):
         sleep(5)
 
     @task
-    def c():
+    def c(
+        queue="high_cpu"
+    ):
         sleep(5)
         
     @task
-    def d():
+    def d(
+        queue="high_cpu"
+    ):
         sleep(5)
         
     a() >> [b(), c()] >> d()
